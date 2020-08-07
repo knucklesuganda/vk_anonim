@@ -2,9 +2,9 @@ token = ""  # group token
 login = ""  # user login
 password = ""  # user password
 two_factor = True  #
-group_id = 0  # group id
+group_id = -0  # group id
 log_file = 'file.log'  # file for logs
-exceed_file = "posts.pickle"  # file for exceeded posts saving
+exceed_file = "posts.json"  # file for exceeded posts savings
 
 # messages
 write_message = "Напишите сообщение чтобы мы могли сделать пост"

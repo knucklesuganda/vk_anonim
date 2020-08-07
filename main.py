@@ -1,16 +1,18 @@
 import os
-import pickle
+import json
+import config
 import random
 import logging
-from collections import deque
-from time import sleep
-
 from vk_api import VkApi
-from vk_api.bot_longpoll import VkBotEventType
-from vk_api.exceptions import VkApiError
-from vk_api.longpoll import VkLongPoll, VkEventType
 from threading import Thread, Lock
-import config
+from vk_api.exceptions import VkApiError
+from vk_api.bot_longpoll import VkBotEventType
+from vk_api.longpoll import VkLongPoll, VkEventType, Event
+
+
+class EventEncoder(json.JSONEncoder):
+    def default(self, obj):
+        return obj.raw
 
 
 class Bot:
@@ -36,11 +38,14 @@ class Bot:
         self.user_vk.auth()
         self.user_vk = self.user_vk.get_api()
 
-        self.posts_to_do = deque()
+        self.posts_to_do = []
         if os.path.exists(config.exceed_file):
             self.logger.info("Uploading from file")
-            with open(config.exceed_file, 'rb') as file:
-                self.posts_to_do = pickle.load(file)
+            try:
+                with open(config.exceed_file, 'r') as file:
+                    self.posts_to_do = json.load(file)
+            except json.JSONDecodeError:
+                print("Decoding error, posts are empty now")
 
         self.exceed_thread = Thread(target=self.post_exceed)
 
@@ -70,27 +75,27 @@ class Bot:
     def send_message(self, where, message, attachments=None):
         self.logger.info(f"Message '{message}' sent to {where} with {attachments}")
         self.vk.messages.send(peer_id=where, message=message,
-                              attachments=attachments, random_id=random.randint(0, 100000))
+                              attachments=attachments,
+                              random_id=random.randint(0, 100000))
 
     def post_exceed(self):
-        lock = Lock()
-
+        post = None
         while True:
+            if not self.posts_to_do:
+                continue
+
             try:
-                lock.acquire()
-                post = self.posts_to_do.pop()
+                post = Event(self.posts_to_do.pop())
                 self.post(post)
                 self.send_message(post.user_id, config.post_successful)
-                self.save()
 
-            except IndexError:
-                pass
-
-            except VkApiError:
-                pass
+            except Exception as exc:
+                if post is not None:
+                    self.posts_to_do.append(post)
+                print("Posts per day counter exceeded")
 
             finally:
-                lock.release()
+                self.save()
 
     def post(self, event):
         attachments = []
@@ -108,18 +113,17 @@ class Bot:
             self.post(event)
             return config.post_successful
 
-        except VkApiError as exc:
-            if exc.code == 100:
+        except Exception as exc:
+            if isinstance(exc, VkApiError) and exc.code == 100:
                 return config.write_message
 
             else:
-                with Lock():
-                    self.posts_to_do.append(event)
+                self.posts_to_do.append(event)
                 return config.post_queue.format(len(self.posts_to_do))
 
     def save(self):
-        with open(config.exceed_file, 'wb') as file:
-            pickle.dump(self.posts_to_do, file)
+        with open(config.exceed_file, 'w') as file:
+            json.dump(self.posts_to_do, file, cls=EventEncoder)
         self.logger.info("Posts are saved!")
 
 
@@ -139,4 +143,3 @@ if __name__ == '__main__':
     https://github.com/knucklesuganda
 """))
     bot.start()
-    print("Goodbye")
