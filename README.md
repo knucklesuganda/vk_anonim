@@ -25,7 +25,7 @@ token = ""  # paste the group token you gained at the 6th step.
 login = ""  # paste the phone number you used when you registered
 password = ""  # paste your password you used when you registered
 two_factor = True  # if you enabled two-factor auth, leave True, otherwise False
-group_id = -0  # group id paste your group id here. To find it, go to your community page(https://vk.com/club0000000) and copy only the numbers in the URL.
+group_id = -0  # group id paste your group id here. To find it, go to your community page(https://vk.com/club0000000) and copy only the numbers in the URL. Be sure to leave the -sign before it.
 log_file = 'file.log'  # File used for logs, if you experience crashes, go here and find the problem. You can change the name if you want to.
 exceed_file = "posts.json"  # Vk has a limited amount of posts per day, if your users send you more than the limit says, all posts will be saved here and posted the next day.
 
