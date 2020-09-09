@@ -39,3 +39,8 @@ group_join = f"Напишите сообщение чтобы сделать а�
 group_leave = f"Возвращайтесь!" # Return to our group!
 # messages
 ```
+
+## How to run your bot
+1) Execute ```python main.py```
+
+
